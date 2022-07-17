@@ -17,6 +17,7 @@ export const _loadFromSpel = (spelStr, config, returnErrors = true) => {
     errors: []
   };
   const extendedConfig = extendConfig(config);
+
   const conv = buildConv(extendedConfig);
   
   let compiledExpression;
@@ -36,7 +37,7 @@ export const _loadFromSpel = (spelStr, config, returnErrors = true) => {
 
     jsTree = convertToTree(convertedObj, conv, extendedConfig, meta);
     if (jsTree && jsTree.type != "group" && jsTree.type != "switch_group") {
-      jsTree = wrapInDefaultConj(jsTree, extendedConfig);
+      jsTree = wrapInDefaultConj(jsTree, extendedConfig, convertedObj["not"]);
     }
     logger.debug("jsTree:", jsTree);
   }
@@ -70,6 +71,7 @@ const convertCompiled = (expr, meta, parentExpr = null) => {
     if (children.length != 1) {
       meta.errors.push(`Operator NOT should have 1 child, but got ${children.length}}`);
     }
+   
     return {
       ...children[0],
       not: !(children[0].not || false)
@@ -624,6 +626,7 @@ const convertToTree = (spel, conv, config, meta, parentSpel = null) => {
           }
         }
       });
+      
       res = {
         type: "group",
         id: uuid(),
@@ -634,6 +637,7 @@ const convertToTree = (spel, conv, config, meta, parentSpel = null) => {
         }
       };
     } else if (opKeys) {
+
       const vals = convertChildren();
       const fieldObj = vals[0];
       let convertedArgs = vals.slice(1);
@@ -663,7 +667,10 @@ const convertToTree = (spel, conv, config, meta, parentSpel = null) => {
         }
 
         res = buildRuleGroup(fieldObj, opKey, convertedArgs, config, meta);
+        
+       
       } else {
+
         // 2. not group
         if (fieldObj.valueSrc != "field") {
           meta.errors.push(`Expected field ${JSON.stringify(fieldObj)}`);
@@ -863,7 +870,7 @@ const wrapInDefaultConj = (rule, config, not = false) => {
     children1: { [rule.id]: rule },
     properties: {
       conjunction: defaultConjunction(config),
-      not: not
+      not: not || false 
     }
   };
 };
